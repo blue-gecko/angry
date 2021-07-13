@@ -10,7 +10,9 @@ use {
 fn main() -> Result<()> {
     let cli = &cli::Cli::from_args();
     let content = cli.content()?;
-    let convertor = SimpleConvertor::new();
+    // let mut rng = rand::thread_rng();
+    // let mut convertor = RandomConvertor::new(&mut rng);
+    let mut convertor = SimpleConvertor {};
     println!("file content: {}", convertor.convert(content));
     Ok(())
 }

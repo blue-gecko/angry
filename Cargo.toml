@@ -8,6 +8,7 @@ edition = "2018"
 [dependencies]
 structopt = "0.3.22"
 anyhow = "1.0.41"
+rand = "0.8.4"
 
 [dev-dependencies]
 assert_cmd = "1.0.7"
