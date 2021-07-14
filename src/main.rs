@@ -2,7 +2,7 @@ mod cli;
 mod convert;
 
 use {
-    crate::convert::{Convertor, SimpleConvertor},
+    crate::convert::{simple::SimpleConvertor, Convertor},
     anyhow::Result,
     structopt::StructOpt,
 };
