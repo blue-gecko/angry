@@ -39,6 +39,6 @@ mod tests {
         let rng = &mut StepRng::new(1, 1);
         let mut c = RandomConvertor::new(rng);
 
-        assert_eq!(c.convert("simple string"), "sImPlE sTrInG");
+        assert_eq!(c.convert("simple string".to_string()), "sImPlE sTrInG");
     }
 }

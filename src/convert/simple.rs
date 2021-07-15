@@ -14,7 +14,7 @@ impl<'a> SimpleConvertor<'a> {
         filter: &'a dyn Fn(char) -> bool,
         convert: &'a dyn Fn(char) -> Box<dyn Iterator<Item = char>>,
     ) -> Self {
-        Self { filter, convert }
+        SimpleConvertor { filter, convert }
     }
 
     pub fn uppercase() -> Self {
@@ -33,10 +33,10 @@ impl<'a> SimpleConvertor<'a> {
 
     pub fn reverse() -> Self {
         Self::new(&|c: char| c.is_alphabetic(), &|c: char| {
-            if c.is_uppercase() {
-                Box::new(c.to_lowercase())
-            } else {
+            if c.is_lowercase() {
                 Box::new(c.to_uppercase())
+            } else {
+                Box::new(c.to_lowercase())
             }
         })
     }
@@ -60,7 +60,7 @@ mod tests {
     fn convert_string_to_upper() {
         let mut c = SimpleConvertor::uppercase();
 
-        assert_eq!(c.convert("simple string"), "SIMPLE STRING");
+        assert_eq!(c.convert("simple string".to_string()), "SIMPLE STRING");
     }
 
     #[test]

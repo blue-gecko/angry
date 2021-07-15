@@ -1,18 +1,11 @@
 mod cli;
 mod convert;
 
-use {
-    crate::convert::{simple::SimpleConvertor, Convertor},
-    anyhow::Result,
-    structopt::StructOpt,
-};
+use {anyhow::Result, structopt::StructOpt};
 
 fn main() -> Result<()> {
     let cli = &cli::Cli::from_args();
     let content = cli.content()?;
-    // let mut rng = rand::thread_rng();
-    // let mut convertor = RandomConvertor::new(&mut rng);
-    let mut convertor = SimpleConvertor::uppercase();
-    println!("file content: {}", convertor.convert(content));
+    println!("{}", &cli.convert(content));
     Ok(())
 }
