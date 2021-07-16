@@ -1,7 +1,11 @@
 use {
     crate::convert::{random::RandomConvertor, simple::SimpleConvertor, Convertor},
     anyhow::{Context, Error, Result},
-    std::path::PathBuf,
+    std::{
+        fs::{self, File},
+        io::{self, BufWriter, Write},
+        path::PathBuf,
+    },
     structopt::{clap::ArgGroup, StructOpt},
 };
 
@@ -56,7 +60,7 @@ impl Cli {
         if let Some(content) = &self.content {
             Ok(content.to_string())
         } else if let Some(path) = &self.input {
-            let content = std::fs::read_to_string(path)
+            let content = fs::read_to_string(path)
                 .with_context(|| format!("could not read file `{:?}`", path))?;
 
             Ok(content)
@@ -65,7 +69,31 @@ impl Cli {
         }
     }
 
-    pub fn convert(&self, s: String) -> String {
+    pub fn print(&self, s: String) -> Result<()> {
+        if let Some(file) = &self.output {
+            let handle =
+                File::create(file).with_context(|| format!("could not write file `{:?}`", file))?;
+            self._print(BufWriter::new(handle), false, s)?;
+        } else {
+            let stdout = io::stdout();
+            let handle = stdout.lock();
+            self._print(BufWriter::new(handle), true, s)?;
+        };
+
+        Ok(())
+    }
+
+    fn _print<T: Write>(&self, mut buffer: BufWriter<T>, console: bool, s: String) -> Result<()> {
+        write!(buffer, "{}", s)?;
+
+        if console {
+            writeln!(buffer, "")?;
+        }
+        Ok(())
+    }
+
+    pub fn convert<T: Into<String>>(&self, s: T) -> String {
+        let s = s.into();
         if self.uppercase {
             SimpleConvertor::uppercase().convert(s)
         } else if self.lowercase {
