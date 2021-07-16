@@ -14,6 +14,3 @@ pub trait Convertor {
 
     fn convert_char(&mut self, c: char) -> Box<dyn Iterator<Item = char>>;
 }
-
-#[cfg(test)]
-mod tests {}

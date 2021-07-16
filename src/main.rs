@@ -1,11 +1,10 @@
 mod cli;
 mod convert;
 
-use {anyhow::Result, structopt::StructOpt};
+use anyhow::Result;
 
 fn main() -> Result<()> {
-    let cli = &cli::Cli::from_args();
-    let content = cli.content()?;
-    println!("{}", &cli.convert(content));
+    let cli = cli::from_args();
+    println!("{}", cli.convert(cli.content()?));
     Ok(())
 }

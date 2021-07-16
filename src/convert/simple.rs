@@ -60,7 +60,7 @@ mod tests {
     fn convert_string_to_upper() {
         let mut c = SimpleConvertor::uppercase();
 
-        assert_eq!(c.convert("simple string".to_string()), "SIMPLE STRING");
+        assert_eq!(c.convert("simple string"), "SIMPLE STRING");
     }
 
     #[test]
