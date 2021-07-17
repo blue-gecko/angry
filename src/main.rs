@@ -1,10 +1,10 @@
 mod cli;
 mod convert;
 
-use anyhow::Result;
+use {crate::cli::Cli, anyhow::Result, structopt::StructOpt};
 
 fn main() -> Result<()> {
-    let cli = cli::from_args();
+    let cli = Cli::from_args();
     cli.print(cli.convert(cli.content()?))?;
     Ok(())
 }

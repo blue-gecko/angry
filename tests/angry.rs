@@ -12,6 +12,7 @@ fn unspecified_content_arg() -> Result<(), Box<dyn std::error::Error>> {
     cmd.arg("a little bit OF TEXT")
         .assert()
         .failure()
+        .code(1)
         .stderr(str::contains(
             "The following required arguments were not provided:",
         ));
@@ -26,6 +27,7 @@ fn uppercase_content_arg() -> Result<(), Box<dyn std::error::Error>> {
         .arg("a little bit OF TEXT")
         .assert()
         .success()
+        .code(0)
         .stdout(str::contains("A LITTLE BIT OF TEXT"));
 
     Ok(())
@@ -103,9 +105,10 @@ fn file_doesnt_exist() -> Result<(), Box<dyn std::error::Error>> {
 fn no_content_supplied() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("angry")?;
     cmd.arg("-u")
+        .write_stdin("this is some text")
         .assert()
-        .failure()
-        .stderr(str::contains("Missing content"));
+        .success()
+        .stdout(str::contains("THIS IS SOME TEXT"));
 
     Ok(())
 }
@@ -129,7 +132,7 @@ fn reverse_content_arg() -> Result<(), Box<dyn std::error::Error>> {
         .arg("a little bit OF TEXT")
         .assert()
         .success()
-        .stdout(str::contains("A LITTLE BIT of text"));
+        .stdout(predicate::eq("A LITTLE BIT of text\n"));
 
     Ok(())
 }
@@ -141,7 +144,7 @@ fn random_content_arg() -> Result<(), Box<dyn std::error::Error>> {
         .arg("a little bit OF TEXT")
         .assert()
         .success()
-        .stdout(predicate::eq("a little bit of text").not());
+        .stdout(predicate::function(|s: &str| s.len() == 21));
 
     Ok(())
 }
