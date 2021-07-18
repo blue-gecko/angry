@@ -154,10 +154,15 @@ impl Cli {
         match input {
             Ok(input) => match output {
                 Ok(mut output) => {
-                    input.filter_map(|s| s.ok()).for_each(|s| {
-                        write!(output, "{}\n", convertor.convert(s)).unwrap();
-                    });
-                    Ok(())
+                    match input
+                        .filter_map(|s| s.ok())
+                        .map(|s| write!(output, "{}\n", convertor.convert(s)))
+                        .filter_map(|r| r.err())
+                        .nth(0)
+                    {
+                        Some(e) => Err(Error::from(e)),
+                        None => Ok(()),
+                    }
                 }
                 Err(e) => Err(e),
             },
