@@ -70,14 +70,14 @@ pub struct Cli {
     angry: bool,
 }
 
-type Input<'a> = Result<Box<dyn Iterator<Item = io::Result<String>> + 'a>>;
-type Output<'a> = Result<LineWriter<Box<dyn Write + 'a>>>;
+type Input = Result<Box<dyn Iterator<Item = io::Result<String>>>>;
+type Output = Result<LineWriter<Box<dyn Write>>>;
 
 #[allow(dead_code)]
-impl<'a> Cli {
+impl Cli {
     const DEFAULT_STEP: u8 = 20;
 
-    fn conversion(&'a self) -> Conversion {
+    fn conversion(&self) -> Conversion {
         if self.uppercase {
             Conversion::Uppercase
         } else if self.lowercase {
@@ -90,7 +90,7 @@ impl<'a> Cli {
         }
     }
 
-    fn convertor(&'a self) -> Box<dyn Convertor + 'a> {
+    fn convertor(&self) -> Box<dyn Convertor> {
         match self.conversion() {
             Conversion::Uppercase => SimpleConvertor::uppercase(),
             Conversion::Lowercase => SimpleConvertor::lowercase(),
@@ -99,9 +99,9 @@ impl<'a> Cli {
         }
     }
 
-    fn input(&'a self) -> Input<'a> {
+    fn input(&self) -> Input {
         if let Some(input) = &self.content {
-            self.input_from_arg(input)
+            self.input_from_arg(String::from(input))
         } else if let Some(path) = &self.input {
             self.input_from_file(path)
         } else {
@@ -109,25 +109,25 @@ impl<'a> Cli {
         }
     }
 
-    fn input_from_arg(&'a self, s: &'a str) -> Input<'a> {
+    fn input_from_arg(&self, s: String) -> Input {
         let buffer = Cursor::new(s);
         Ok(Box::new(buffer.lines()))
     }
 
-    fn input_from_file(&'a self, path: &'a Path) -> Input<'a> {
+    fn input_from_file(&self, path: &Path) -> Input {
         let file = File::open(path).with_context(|| format!("could not open file `{:?}`", path))?;
         let buffer = BufReader::new(file);
         Ok(Box::new(buffer.lines()))
     }
 
-    fn input_from_stdin(&'a self) -> Input<'a> {
+    fn input_from_stdin(&self) -> Input {
         let read = io::stdin();
         // let read = input.lock();
         let buffer = BufReader::new(read);
         Ok(Box::new(buffer.lines()))
     }
 
-    fn output(&'a self) -> Output {
+    fn output(&self) -> Output {
         if let Some(file) = &self.output {
             let handle =
                 File::create(file).with_context(|| format!("could not write file `{:?}`", file))?;
@@ -138,7 +138,7 @@ impl<'a> Cli {
         }
     }
 
-    pub fn convert(&'a self) -> Result<()> {
+    pub fn convert(&self) -> Result<()> {
         let convertor = self.convertor();
         let input = self.input();
         let output = self.output();
@@ -146,8 +146,8 @@ impl<'a> Cli {
     }
 
     fn _convert(
-        &'a self,
-        mut convertor: Box<dyn Convertor + 'a>,
+        &self,
+        mut convertor: Box<dyn Convertor>,
         input: Input,
         output: Output,
     ) -> Result<()> {

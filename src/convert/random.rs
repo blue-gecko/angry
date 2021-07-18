@@ -7,8 +7,8 @@ use {
     },
 };
 
-pub struct RandomConvertor<'a> {
-    rng: Box<dyn RngCore + 'a>,
+pub struct RandomConvertor {
+    rng: Box<dyn RngCore>,
     percent: u8,
     step: Option<u8>,
     flipped: bool,
@@ -16,12 +16,8 @@ pub struct RandomConvertor<'a> {
 }
 
 #[allow(dead_code)]
-impl<'a> RandomConvertor<'a> {
-    pub fn with_rng(
-        rng: Box<dyn RngCore + 'a>,
-        percent: u8,
-        step: Option<u8>,
-    ) -> Box<dyn Convertor + 'a> {
+impl RandomConvertor {
+    pub fn with_rng(rng: Box<dyn RngCore>, percent: u8, step: Option<u8>) -> Box<dyn Convertor> {
         Box::new(RandomConvertor {
             rng,
             percent,
@@ -31,7 +27,7 @@ impl<'a> RandomConvertor<'a> {
         })
     }
 
-    pub fn new(percent: u8, step: Option<u8>) -> Box<dyn Convertor + 'a> {
+    pub fn new(percent: u8, step: Option<u8>) -> Box<dyn Convertor> {
         let rng = Box::new(rand::thread_rng());
         RandomConvertor::with_rng(rng, percent, step)
     }
@@ -61,7 +57,7 @@ impl<'a> RandomConvertor<'a> {
 }
 
 /// Manual debug implementation required, to skip the Rng field
-impl<'a> Debug for RandomConvertor<'a> {
+impl Debug for RandomConvertor {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         f.debug_struct("RandomConvertor")
             .field("percent", &self.percent)
@@ -70,7 +66,7 @@ impl<'a> Debug for RandomConvertor<'a> {
     }
 }
 
-impl<'a> Convertor for RandomConvertor<'a> {
+impl Convertor for RandomConvertor {
     fn convert_char(&mut self, c: char) -> Box<dyn Iterator<Item = char>> {
         if c.is_alphabetic() {
             if self.rng() < self.current() {
