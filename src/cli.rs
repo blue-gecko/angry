@@ -1,14 +1,19 @@
 use {
-    crate::convert::{random::RandomConvertor, simple::SimpleConvertor, Convertor},
+    crate::convert::{
+        //random::RandomConvertor,
+        simple::SimpleConvertor,
+        Convertor,
+    },
     anyhow::{Context, Error, Result},
     std::{
         fs::File,
-        io::{self, BufRead, BufReader, BufWriter, Cursor, Write},
+        io::{self, BufRead, BufReader, Cursor, LineWriter, Write},
         path::{Path, PathBuf},
     },
     structopt::{clap::ArgGroup, StructOpt},
 };
 
+#[allow(dead_code)]
 enum Conversion {
     Uppercase,
     Lowercase,
@@ -69,10 +74,14 @@ pub struct Cli {
     angry: bool,
 }
 
-impl Cli {
+type Input<'a> = Result<Box<dyn Iterator<Item = io::Result<String>> + 'a>>;
+type Output<'a> = Result<LineWriter<Box<dyn Write + 'a>>>;
+
+#[allow(dead_code)]
+impl<'a> Cli {
     const DEFAULT_STEP: u8 = 20;
 
-    fn conversion(&self) -> Conversion {
+    fn conversion(&'a self) -> Conversion {
         if self.uppercase {
             Conversion::Uppercase
         } else if self.lowercase {
@@ -85,76 +94,84 @@ impl Cli {
         }
     }
 
-    pub fn content(&self) -> Result<String> {
-        if let Some(content) = &self.content {
-            self.content_from_arg(content)
-        } else if let Some(path) = &self.input {
-            self.content_from_file(path)
-        } else {
-            self.content_from_stdin()
+    fn convertor(&'a self) -> Box<dyn Convertor + 'a> {
+        match self.conversion() {
+            Conversion::Uppercase => SimpleConvertor::uppercase(),
+            Conversion::Lowercase => SimpleConvertor::lowercase(),
+            Conversion::Reverse => SimpleConvertor::reverse(),
+            // Conversion::Random(percent, step) => {
+            //     let rng = &mut rand::thread_rng();
+            //     let percent = percent;
+            //     let step = step;
+            //     RandomConvertor::new(rng, percent, step)
+            // }
+            _ => SimpleConvertor::uppercase(),
         }
     }
 
-    fn content_from_arg(&self, s: &str) -> Result<String> {
-        let mut buffer = Cursor::new(s);
-        self._content(&mut buffer)
+    fn input(&'a self) -> Input<'a> {
+        if let Some(input) = &self.content {
+            self.input_from_arg(input)
+        } else if let Some(path) = &self.input {
+            self.input_from_file(path)
+        } else {
+            self.input_from_stdin()
+        }
     }
 
-    fn content_from_file(&self, path: &Path) -> Result<String> {
+    fn input_from_arg(&'a self, s: &'a str) -> Input<'a> {
+        let buffer = Cursor::new(s);
+        Ok(Box::new(buffer.lines()))
+    }
+
+    fn input_from_file(&'a self, path: &'a Path) -> Input<'a> {
         let file = File::open(path).with_context(|| format!("could not open file `{:?}`", path))?;
-        let mut buffer = BufReader::new(file);
-        self._content(&mut buffer)
+        let buffer = BufReader::new(file);
+        Ok(Box::new(buffer.lines()))
     }
 
-    fn content_from_stdin(&self) -> Result<String> {
-        let input = io::stdin();
-        let read = input.lock();
-        let mut buffer = BufReader::new(read);
-        self._content(&mut buffer)
+    fn input_from_stdin(&'a self) -> Input<'a> {
+        let read = io::stdin();
+        // let read = input.lock();
+        let buffer = BufReader::new(read);
+        Ok(Box::new(buffer.lines()))
     }
 
-    fn _content(&self, buffer: &mut dyn BufRead) -> Result<String> {
-        let mut content = String::new();
-        buffer
-            .read_to_string(&mut content)
-            .with_context(|| "could not read buffer".to_string())?;
-
-        Ok(content)
-    }
-
-    pub fn print(&self, s: String) -> Result<()> {
+    fn output(&'a self) -> Output {
         if let Some(file) = &self.output {
             let handle =
                 File::create(file).with_context(|| format!("could not write file `{:?}`", file))?;
-            self._print(BufWriter::new(handle), false, s)?;
+            Ok(LineWriter::new(Box::new(handle)))
         } else {
-            let stdout = io::stdout();
-            let handle = stdout.lock();
-            self._print(BufWriter::new(handle), true, s)?;
-        };
-
-        Ok(())
-    }
-
-    fn _print<T: Write>(&self, mut buffer: BufWriter<T>, console: bool, s: String) -> Result<()> {
-        write!(buffer, "{}", s)?;
-
-        if console {
-            writeln!(buffer)?;
+            let handle = io::stdout();
+            Ok(LineWriter::new(Box::new(handle)))
         }
-        Ok(())
     }
 
-    pub fn convert<T: Into<String>>(&self, s: T) -> String {
-        let s = s.into();
-        match self.conversion() {
-            Conversion::Uppercase => SimpleConvertor::uppercase().convert(s),
-            Conversion::Lowercase => SimpleConvertor::lowercase().convert(s),
-            Conversion::Reverse => SimpleConvertor::reverse().convert(s),
-            Conversion::Random(percent, step) => {
-                let rng = &mut rand::thread_rng();
-                RandomConvertor::new(rng, percent, step).convert(s)
-            }
+    pub fn convert(&'a self) -> Result<()> {
+        let convertor = self.convertor();
+        let input = self.input();
+        let output = self.output();
+        self._convert(convertor, input, output)
+    }
+
+    fn _convert(
+        &'a self,
+        mut convertor: Box<dyn Convertor + 'a>,
+        input: Input,
+        output: Output,
+    ) -> Result<()> {
+        match input {
+            Ok(input) => match output {
+                Ok(mut output) => {
+                    input.filter_map(|s| s.ok()).for_each(|s| {
+                        write!(output, "{}\n", convertor.convert(s)).unwrap();
+                    });
+                    Ok(())
+                }
+                Err(e) => Err(e),
+            },
+            Err(e) => Err(e),
         }
     }
 }

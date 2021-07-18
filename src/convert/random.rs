@@ -17,14 +17,14 @@ pub struct RandomConvertor<'a> {
 
 #[allow(dead_code)]
 impl<'a> RandomConvertor<'a> {
-    pub fn new(rng: &'a mut dyn RngCore, percent: u8, step: Option<u8>) -> Self {
-        RandomConvertor {
+    pub fn new(rng: &'a mut dyn RngCore, percent: u8, step: Option<u8>) -> Box<dyn Convertor + 'a> {
+        Box::new(RandomConvertor {
             rng,
             percent,
             step,
             flipped: false,
             current: percent as u16,
-        }
+        })
     }
 
     fn current(&mut self) -> u16 {
@@ -96,7 +96,7 @@ mod tests {
         let rng = &mut StepRng::new(50, 50);
         let mut c = RandomConvertor::new(rng, 50, None);
 
-        assert_eq!(c.convert("simple string"), "sImPlE sTrInG");
+        assert_eq!(c.convert(String::from("simple string")), "sImPlE sTrInG");
     }
 
     #[test]
@@ -104,7 +104,7 @@ mod tests {
         let rng = &mut StepRng::new(50, 50);
         let mut c = RandomConvertor::new(rng, 50, None);
 
-        assert_eq!(c.convert("SIMPLE STRING"), "sImPlE sTrInG");
+        assert_eq!(c.convert(String::from("SIMPLE STRING")), "sImPlE sTrInG");
     }
 
     #[test]
@@ -112,15 +112,14 @@ mod tests {
         let rng = &mut StepRng::new(50, 50);
         let mut c = RandomConvertor::new(rng, 50, None);
 
-        assert_eq!(c.convert("SiMpLe StRiNg"), "sImPlE sTrInG");
+        assert_eq!(c.convert(String::from("SiMpLe StRiNg")), "sImPlE sTrInG");
     }
 
     #[test]
     fn random_convert_with_step() {
         let rng = &mut StepRng::new(0, 25);
         let mut c = RandomConvertor::new(rng, 25, Some(25));
-        println!("{:?}", c);
 
-        assert_eq!(c.convert("simple string"), "SimpLe stRing");
+        assert_eq!(c.convert(String::from("simple string")), "SimpLe stRing");
     }
 }

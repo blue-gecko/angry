@@ -54,7 +54,7 @@ fn uppercase_content_arg_to_file() -> CmdResult {
     // read and asset on the file contents
     let mut buf = String::new();
     file.read_to_string(&mut buf)?;
-    assert_eq!("A LITTLE BIT OF TEXT", buf);
+    assert_eq!("A LITTLE BIT OF TEXT\n", buf);
 
     Ok(())
 }
@@ -76,7 +76,7 @@ fn uppercase_content_in_file() -> CmdResult {
 }
 
 #[test]
-fn uppercase_content_stdin() -> Result<(), Box<dyn std::error::Error>> {
+fn uppercase_content_stdin() -> CmdResult {
     let mut cmd = Command::cargo_bin("angry")?;
     cmd.arg("--uppercase")
         .write_stdin("this is some text")
