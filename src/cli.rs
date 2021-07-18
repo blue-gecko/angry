@@ -1,9 +1,5 @@
 use {
-    crate::convert::{
-        //random::RandomConvertor,
-        simple::SimpleConvertor,
-        Convertor,
-    },
+    crate::convert::{random::RandomConvertor, simple::SimpleConvertor, Convertor},
     anyhow::{Context, Error, Result},
     std::{
         fs::File,
@@ -99,13 +95,7 @@ impl<'a> Cli {
             Conversion::Uppercase => SimpleConvertor::uppercase(),
             Conversion::Lowercase => SimpleConvertor::lowercase(),
             Conversion::Reverse => SimpleConvertor::reverse(),
-            // Conversion::Random(percent, step) => {
-            //     let rng = &mut rand::thread_rng();
-            //     let percent = percent;
-            //     let step = step;
-            //     RandomConvertor::new(rng, percent, step)
-            // }
-            _ => SimpleConvertor::uppercase(),
+            Conversion::Random(percent, step) => RandomConvertor::new(percent, step),
         }
     }
 
