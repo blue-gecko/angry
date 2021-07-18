@@ -164,6 +164,16 @@ mod tests {
     use super::*;
 
     #[test]
+    fn parse_percent_success() {
+        assert!(matches!(parse_percent("100"), Ok(100)));
+    }
+
+    #[test]
+    fn parse_percent_fail() {
+        assert!(matches!(parse_percent("101"), Err(_)));
+    }
+
+    #[test]
     fn with_uppercase_arg() {
         assert_eq!(Cli::from_iter(&["test", "-u"]).uppercase, true);
     }
@@ -227,57 +237,54 @@ mod tests {
 
     #[test]
     fn without_required_arg() {
-        assert_eq!(Cli::clap().get_matches_from_safe(&["test"]).is_err(), true);
+        assert!(Cli::clap().get_matches_from_safe(&["test"]).is_err());
     }
 
     #[test]
     fn with_invalid_arg() {
-        assert_eq!(
-            Cli::clap()
-                .get_matches_from_safe(&["test", "-u", "-x"])
-                .is_err(),
-            true
-        );
+        assert!(Cli::clap()
+            .get_matches_from_safe(&["test", "-u", "-x"])
+            .is_err());
     }
 
     #[test]
     fn conversion_with_uppercase() {
-        matches!(
+        assert!(matches!(
             Cli::from_iter(&["test", "--uppercase"]).conversion(),
             Conversion::Uppercase
-        );
+        ));
     }
 
     #[test]
     fn conversion_with_lowercase() {
-        matches!(
+        assert!(matches!(
             Cli::from_iter(&["test", "--lowercase"]).conversion(),
             Conversion::Lowercase
-        );
+        ));
     }
 
     #[test]
     fn conversion_with_reverse() {
-        matches!(
+        assert!(matches!(
             Cli::from_iter(&["test", "--reverse"]).conversion(),
-            Conversion::Uppercase
-        );
+            Conversion::Reverse
+        ));
     }
 
     #[test]
     fn conversion_with_random() {
-        matches!(
+        assert!(matches!(
             Cli::from_iter(&["test", "--angry"]).conversion(),
             Conversion::Random(50, None)
-        );
+        ));
     }
 
     #[test]
     fn conversion_with_random_percent() {
-        matches!(
+        assert!(matches!(
             Cli::from_iter(&["test", "--angry", "-p60"]).conversion(),
             Conversion::Random(60, None)
-        );
+        ));
     }
 
     #[test]
@@ -290,19 +297,16 @@ mod tests {
 
     #[test]
     fn conversion_with_random_step() {
-        matches!(
+        assert!(matches!(
             Cli::from_iter(&["test", "--angry", "-s25"]).conversion(),
             Conversion::Random(50, Some(25))
-        );
+        ));
     }
 
     #[test]
     fn with_random_and_percent_out_of_bound() {
-        assert_eq!(
-            Cli::clap()
-                .get_matches_from_safe(&["test", "-a", "-p", "101"])
-                .is_err(),
-            true
-        );
+        assert!(Cli::clap()
+            .get_matches_from_safe(&["test", "-a", "-p", "101"])
+            .is_err());
     }
 }

@@ -6,8 +6,10 @@ use {
     tempfile::NamedTempFile,
 };
 
+type CmdResult = Result<(), Box<dyn std::error::Error>>;
+
 #[test]
-fn unspecified_content_arg() -> Result<(), Box<dyn std::error::Error>> {
+fn unspecified_content_arg() -> CmdResult {
     let mut cmd = Command::cargo_bin("angry")?;
     cmd.arg("a little bit OF TEXT")
         .assert()
@@ -21,9 +23,9 @@ fn unspecified_content_arg() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-fn uppercase_content_arg() -> Result<(), Box<dyn std::error::Error>> {
+fn uppercase_content_arg() -> CmdResult {
     let mut cmd = Command::cargo_bin("angry")?;
-    cmd.arg("-u")
+    cmd.arg("--uppercase")
         .arg("a little bit OF TEXT")
         .assert()
         .success()
@@ -34,13 +36,13 @@ fn uppercase_content_arg() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-fn uppercase_content_arg_to_file() -> Result<(), Box<dyn std::error::Error>> {
+fn uppercase_content_arg_to_file() -> CmdResult {
     let mut file = NamedTempFile::new()?;
 
     let mut cmd = Command::cargo_bin("angry")?;
-    cmd.arg("-u")
+    cmd.arg("--uppercase")
         .arg("a little bit OF TEXT")
-        .arg("-o")
+        .arg("--output")
         .arg(file.path())
         .assert()
         .success()
@@ -58,28 +60,12 @@ fn uppercase_content_arg_to_file() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-fn uppercase_content_in_file() -> Result<(), Box<dyn std::error::Error>> {
+fn uppercase_content_in_file() -> CmdResult {
     let mut file = NamedTempFile::new()?;
     writeln!(file, "this is some TEXT")?;
 
     let mut cmd = Command::cargo_bin("angry")?;
-    cmd.arg("-u")
-        .arg("-i")
-        .arg(file.path())
-        .assert()
-        .success()
-        .stdout(str::contains("THIS IS SOME TEXT"));
-
-    Ok(())
-}
-
-#[test]
-fn uppercase_content_in_file_long() -> Result<(), Box<dyn std::error::Error>> {
-    let mut file = NamedTempFile::new()?;
-    writeln!(file, "this is some text")?;
-
-    let mut cmd = Command::cargo_bin("angry")?;
-    cmd.arg("-u")
+    cmd.arg("--uppercase")
         .arg("--input")
         .arg(file.path())
         .assert()
@@ -90,21 +76,9 @@ fn uppercase_content_in_file_long() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-fn file_doesnt_exist() -> Result<(), Box<dyn std::error::Error>> {
+fn uppercase_content_stdin() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("angry")?;
-    cmd.arg("-u")
-        .args(["-i", "test/file/doesnt/exist"])
-        .assert()
-        .failure()
-        .stderr(str::contains("No such file or directory"));
-
-    Ok(())
-}
-
-#[test]
-fn no_content_supplied() -> Result<(), Box<dyn std::error::Error>> {
-    let mut cmd = Command::cargo_bin("angry")?;
-    cmd.arg("-u")
+    cmd.arg("--uppercase")
         .write_stdin("this is some text")
         .assert()
         .success()
@@ -114,9 +88,21 @@ fn no_content_supplied() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-fn lowercase_content_arg() -> Result<(), Box<dyn std::error::Error>> {
+fn file_doesnt_exist() -> CmdResult {
     let mut cmd = Command::cargo_bin("angry")?;
-    cmd.arg("-l")
+    cmd.arg("--uppercase")
+        .args(["--input", "test/file/doesnt/exist"])
+        .assert()
+        .failure()
+        .stderr(str::contains("No such file or directory"));
+
+    Ok(())
+}
+
+#[test]
+fn lowercase_content_arg() -> CmdResult {
+    let mut cmd = Command::cargo_bin("angry")?;
+    cmd.arg("--lowercase")
         .arg("a little bit OF TEXT")
         .assert()
         .success()
@@ -126,9 +112,9 @@ fn lowercase_content_arg() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-fn reverse_content_arg() -> Result<(), Box<dyn std::error::Error>> {
+fn reverse_content_arg() -> CmdResult {
     let mut cmd = Command::cargo_bin("angry")?;
-    cmd.arg("-r")
+    cmd.arg("--reverse")
         .arg("a little bit OF TEXT")
         .assert()
         .success()
@@ -138,9 +124,9 @@ fn reverse_content_arg() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-fn random_content_arg() -> Result<(), Box<dyn std::error::Error>> {
+fn random_content_arg() -> CmdResult {
     let mut cmd = Command::cargo_bin("angry")?;
-    cmd.arg("-a")
+    cmd.arg("--random")
         .arg("a little bit OF TEXT")
         .assert()
         .success()
