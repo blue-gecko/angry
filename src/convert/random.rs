@@ -15,9 +15,8 @@ pub struct RandomConvertor {
     current: u16,
 }
 
-#[allow(dead_code)]
 impl RandomConvertor {
-    pub fn with_rng(rng: Box<dyn RngCore>, percent: u8, step: Option<u8>) -> Box<dyn Convertor> {
+    fn with_rng(rng: Box<dyn RngCore>, percent: u8, step: Option<u8>) -> Box<dyn Convertor> {
         Box::new(RandomConvertor {
             rng,
             percent,

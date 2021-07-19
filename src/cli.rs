@@ -4,12 +4,12 @@ use {
     std::{
         fs::File,
         io::{self, BufRead, BufReader, Cursor, LineWriter, Write},
-        path::{Path, PathBuf},
+        path::PathBuf,
     },
     structopt::{clap::ArgGroup, StructOpt},
 };
 
-#[allow(dead_code)]
+#[derive(Debug)]
 enum Conversion {
     Uppercase,
     Lowercase,
@@ -70,8 +70,9 @@ pub struct Cli {
     angry: bool,
 }
 
-type Input = Result<Box<dyn Iterator<Item = io::Result<String>>>>;
-type Output = Result<LineWriter<Box<dyn Write>>>;
+type Convert = Box<dyn Convertor>;
+type Input = Box<dyn Iterator<Item = io::Result<String>>>;
+type Output = LineWriter<Box<dyn Write>>;
 
 #[allow(dead_code)]
 impl Cli {
@@ -90,7 +91,7 @@ impl Cli {
         }
     }
 
-    fn convertor(&self) -> Box<dyn Convertor> {
+    fn convertor(&self) -> Convert {
         match self.conversion() {
             Conversion::Uppercase => SimpleConvertor::uppercase(),
             Conversion::Lowercase => SimpleConvertor::lowercase(),
@@ -99,35 +100,23 @@ impl Cli {
         }
     }
 
-    fn input(&self) -> Input {
+    fn input(&self) -> Result<Input> {
         if let Some(input) = &self.content {
-            self.input_from_arg(String::from(input))
+            let buffer = Cursor::new(String::from(input));
+            Ok(Box::new(buffer.lines()))
         } else if let Some(path) = &self.input {
-            self.input_from_file(path)
+            let file =
+                File::open(path).with_context(|| format!("could not open file `{:?}`", path))?;
+            let buffer = BufReader::new(file);
+            Ok(Box::new(buffer.lines()))
         } else {
-            self.input_from_stdin()
+            let read = io::stdin();
+            let buffer = BufReader::new(read);
+            Ok(Box::new(buffer.lines()))
         }
     }
 
-    fn input_from_arg(&self, s: String) -> Input {
-        let buffer = Cursor::new(s);
-        Ok(Box::new(buffer.lines()))
-    }
-
-    fn input_from_file(&self, path: &Path) -> Input {
-        let file = File::open(path).with_context(|| format!("could not open file `{:?}`", path))?;
-        let buffer = BufReader::new(file);
-        Ok(Box::new(buffer.lines()))
-    }
-
-    fn input_from_stdin(&self) -> Input {
-        let read = io::stdin();
-        // let read = input.lock();
-        let buffer = BufReader::new(read);
-        Ok(Box::new(buffer.lines()))
-    }
-
-    fn output(&self) -> Output {
+    fn output(&self) -> Result<Output> {
         if let Some(file) = &self.output {
             let handle =
                 File::create(file).with_context(|| format!("could not write file `{:?}`", file))?;
@@ -139,35 +128,29 @@ impl Cli {
     }
 
     pub fn convert(&self) -> Result<()> {
-        let convertor = self.convertor();
-        let input = self.input();
-        let output = self.output();
-        self._convert(convertor, input, output)
-    }
-
-    fn _convert(
-        &self,
-        mut convertor: Box<dyn Convertor>,
-        input: Input,
-        output: Output,
-    ) -> Result<()> {
-        match input {
-            Ok(input) => match output {
-                Ok(mut output) => {
-                    match input
-                        .filter_map(|s| s.ok())
-                        .map(|s| write!(output, "{}\n", convertor.convert(s)))
-                        .filter_map(|r| r.err())
-                        .nth(0)
-                    {
-                        Some(e) => Err(Error::from(e)),
-                        None => Ok(()),
-                    }
-                }
+        match self.input() {
+            Ok(input) => match self.output() {
+                Ok(output) => match self._convert(self.convertor(), input, output) {
+                    Some(e) => Err(Error::from(e)),
+                    None => Ok(()),
+                },
                 Err(e) => Err(e),
             },
             Err(e) => Err(e),
         }
+    }
+
+    fn _convert(
+        &self,
+        mut convertor: Convert,
+        input: Input,
+        mut output: Output,
+    ) -> Option<io::Error> {
+        input
+            .filter_map(|s| s.ok())
+            .map(|s| writeln!(output, "{}", convertor.convert(s)))
+            .filter_map(|r| r.err())
+            .nth(0)
     }
 }
 
@@ -203,6 +186,16 @@ mod tests {
     #[test]
     fn with_lowercase_long_arg() {
         assert_eq!(Cli::from_iter(&["test", "--lowercase"]).lowercase, true);
+    }
+
+    #[test]
+    fn with_uppercase_and_lowercase_long_arg() {
+        assert_eq!(
+            Cli::clap()
+                .get_matches_from_safe(&["test", "--uppercase", "--lowercase"])
+                .is_err(),
+            true
+        );
     }
 
     #[test]

@@ -76,6 +76,24 @@ fn uppercase_content_in_file() -> CmdResult {
 }
 
 #[test]
+fn uppercase_content_in_file_multiline() -> CmdResult {
+    let mut file = NamedTempFile::new()?;
+    writeln!(file, "this is some text\nit covers at least\nthree lines!")?;
+
+    let mut cmd = Command::cargo_bin("angry")?;
+    cmd.arg("--uppercase")
+        .arg("--input")
+        .arg(file.path())
+        .assert()
+        .success()
+        .stdout(str::contains(
+            "THIS IS SOME TEXT\nIT COVERS AT LEAST\nTHREE LINES!",
+        ));
+
+    Ok(())
+}
+
+#[test]
 fn uppercase_content_stdin() -> CmdResult {
     let mut cmd = Command::cargo_bin("angry")?;
     cmd.arg("--uppercase")
